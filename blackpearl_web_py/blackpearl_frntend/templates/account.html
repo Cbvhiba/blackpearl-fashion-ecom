@@ -1,0 +1,131 @@
+{% extends "header_footer.html" %}
+{% load static %}
+{% block title %}Account{% endblock title %}
+
+
+{% block extra_style %}<link href="{% static 'css/account.css' %}" rel="stylesheet">{% endblock extra_style %}
+
+{% block content %}
+    <!-- Account Page -->
+    <div id="container1" class="container1">
+		<!-- FORM SECTION -->
+		<div class="row1">
+			<!-- SIGN UP -->
+			<div class="col1 align-items-center1 flex-col sign-up">
+				<div class="form-wrapper align-items-center1">
+					<div class="form sign-up">
+						<div class="input-group1">
+							<i class='bx bxs-user'></i>
+							<input type="text" placeholder="Username">
+						</div>
+						<div class="input-group1">
+							<i class='bx bx-mail-send'></i>
+							<input type="email" placeholder="Email">
+						</div>
+						<div class="input-group1">
+							<i class='bx bxs-lock-alt'></i>
+							<input type="password" placeholder="Password">
+						</div>
+						<div class="input-group1">
+							<i class='bx bxs-lock-alt'></i>
+							<input type="password" placeholder="Confirm password">
+						</div>
+						<button>
+							Sign up
+						</button>
+						<p>
+							<span>
+								Already have an account?
+							</span>
+							<b onclick="toggle()" class="pointer">
+								Sign in here
+							</b>
+						</p>
+					</div>
+				</div>
+			
+			</div>
+			<!-- END SIGN UP -->
+			<!-- SIGN IN -->
+			<div class="col1 align-items-center1 flex-col sign-in">
+				<div class="form-wrapper align-items-center1">
+					<div class="form sign-in">
+						<div class="input-group1">
+							<i class='bx bxs-user'></i>
+							<input type="text" placeholder="Username">
+						</div>
+						<div class="input-group1">
+							<i class='bx bxs-lock-alt'></i>
+							<input type="password" placeholder="Password">
+						</div>
+						<button>
+							Sign in
+						</button>
+						<p>
+							<b>
+								Forgot password?
+							</b>
+						</p>
+						<p>
+							<span>
+								Don't have an account?
+							</span>
+							<b onclick="toggle()" class="pointer">
+								Sign up here
+							</b>
+						</p>
+					</div>
+				</div>
+				<div class="form-wrapper">
+		
+				</div>
+			</div>
+			<!-- END SIGN IN -->
+		</div>
+		<!-- END FORM SECTION -->
+		<!-- CONTENT SECTION -->
+		<div class="row1 content-row">
+			<!-- SIGN IN CONTENT -->
+			<div class="col1 align-items-center1 flex-col">
+				<div class="text sign-in">
+					<h2>
+						Welcome
+					</h2>
+	
+				</div>
+				<div class="img sign-in">
+		
+				</div>
+			</div>
+			<!-- END SIGN IN CONTENT -->
+			<!-- SIGN UP CONTENT -->
+			<div class="col1 align-items-center1 flex-col">
+				<div class="img sign-up">
+				
+				</div>
+				<div class="text sign-up">
+					<h2>
+						Join with us
+					</h2>
+	
+				</div>
+			</div>
+			<!-- END SIGN UP CONTENT -->
+		</div>
+		<!-- END CONTENT SECTION -->
+	</div>
+{% block extra_js %}
+    <script>
+        let container = document.getElementById('container1')
+
+        toggle = () => {
+            container.classList.toggle('sign-in')
+            container.classList.toggle('sign-up')
+        }
+
+        setTimeout(() => {
+            container.classList.add('sign-in')
+        }, 200)
+    </script>
+{% endblock extra_js %}
+{% endblock content %}
