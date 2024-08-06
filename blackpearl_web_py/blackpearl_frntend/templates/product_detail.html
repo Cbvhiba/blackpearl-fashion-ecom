@@ -61,7 +61,14 @@
                     </div>
                     <small class="pt-1">(50 Reviews)</small>
                 </div>
-                <h3 class="font-weight-semi-bold mb-4">RS.{{item.Display_Prize}}</h3>
+                <div class="d-flex">
+                    {% if item.Display_Prize > item.discount %}
+                    <h3 class="mr-4" style="color:red; font-weight:300;">-{{item.discount_Percent| floatformat:1}}%</h3>
+                    <small class="mr-2" style="text-decoration: line-through">M.R.P.{{item.Display_Prize}}</small>
+                    {% endif %}
+                    <i class="fas fa-rupee-sign mr-1" style="line-height:2;color:#1C1C1C;" aria-hidden="true"></i>
+                    <h3 class="font-weight-semi-bold mb-4">{{item.discount | floatformat:2}}</h3>
+                </div>
                 <p class="mb-4">{{item.Description}}</p>
                 {% if 'size' in product.Varient_Type.all|to_name_list %}
                 <div class="d-flex mb-3">
@@ -72,15 +79,22 @@
                         
                         {% if size.uid in ProductHasTheseValues %}
                         {% if 'color' in product.Varient_Type.all|to_name_list %}
+                        <div class="custom-control custom-radio custom-control-inline">
+                            
                         <a href="/product_detail/?p_id={% if product.slug %}{{product.slug}}{% else %}{{product.uid}}{% endif %}&size={{size.uid}}&color={{selectedColor}}&s"
                             class="size-brdr {% if size.id in selectedColorHasSize %}{% else %}disable{% endif %} {% if size.id in ProductItem.Varient_Values.all|to_id_list %}size-active{% endif %}">
                             {{size}}
                         </a>
+                    </div>
                         {% else %}
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" class="custom-control-input" id="color-1" name="color">
+                         
                         <a href="/product_detail/?p_id={% if product.slug %}{{product.slug}}{% else %}{{product.uid}}{% endif %}&size={{size.uid}}&color={{selectedColor}}&s"
                         class="size-brdr {% if size.id in ProductItem.Varient_Values.all|to_id_list %}size-active{% endif %}">
                         {{size}}
                         </a>
+                    </div>
                         {% endif %}
                         {% endif %}
                         {% endfor %}

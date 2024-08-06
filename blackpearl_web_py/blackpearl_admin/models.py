@@ -70,6 +70,7 @@ class Product(BaseModel):
     Related_Products = models.ManyToManyField('Product',blank=True)
     tags = models.ForeignKey(Tag, on_delete=models.SET_NULL,null=True, blank=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True,null=True)
+    trendy = models.BooleanField(default=False)
     class Meta:
         db_table = "Products"
     def __str__(self) -> str:
@@ -89,7 +90,7 @@ class Product_Varients(BaseModel):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,verbose_name="Product varients")
     Varient_Values = models.ManyToManyField(Varient_Values,blank=True,related_name='values')
     Images = models.ImageField(upload_to='Products')
-    discount_Prize = models.FloatField(default=0)
+    discount_Percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     Display_Prize = models.DecimalField(max_digits=12,decimal_places=2)
     Product_stock = models.PositiveIntegerField(blank=True,null=True)
     SKU_code = models.CharField(max_length=255)
@@ -108,8 +109,8 @@ class Product_Varients(BaseModel):
         self.save()
     
     def discount(self):
-        if self.discount_Prize > 0:
-            discounted_price = self.Display_Prize - self.Display_Prize * self.discount_Prize / 100
+        if self.discount_Percent > 0:
+            discounted_price = self.Display_Prize - self.Display_Prize * self.discount_Percent / 100
             return discounted_price
     
 # class Item_Images(models.Model):

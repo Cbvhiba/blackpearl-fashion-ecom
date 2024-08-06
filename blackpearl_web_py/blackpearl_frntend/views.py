@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from blackpearl_admin.models import *
 from django.db.models import Q
 
@@ -7,7 +7,7 @@ from django.db.models import Q
 
 def main(request):
     category_list = Category.objects.all()
-    product_list = Product.objects.filter(status='Active')
+    product_list = Product.objects.filter(status='Active', trendy=True)
     return render(request,'index.html', locals())
 
 def account(request):
@@ -43,36 +43,24 @@ def product_detail(request):
     color = request.GET.get('color')
 
     context = {}
-    try:
-        product = Product.objects.get(slug=Pro_id)
-    except:
-        product = Product.objects.get(id=Pro_id)
     
+    product = get_object_or_404(Product, slug=Pro_id) if Pro_id else get_object_or_404(Product, id=Pro_id)
+
     item = product.product_varients_set.first()
     print(item,'uguggjru')
 
     if Itemfromurl:
-        try:
-            item = product.product_varients_set.filter(id = Itemfromurl).first()
-        except:
-            item = product.product_varients_set.filter(slug = Itemfromurl).first()
+            item = product.product_varients_set.filter(Q(uid = Itemfromurl) | Q(slug = Itemfromurl)).first()
 
     if size and color:
-        item = product.product_varients_set.filter(Varient_Values = size).filter(Varient_Values = color).first()
+        item = product.product_varients_set.filter(Q(Varient_Values = size) & Q(Varient_Values = color)).first()
         if item is None:
-            if 's' in request.GET:
-                item = product.product_varients_set.filter(Varient_Values = size).first()
-            elif 'c' in request.GET:
-                item = product.product_varients_set.filter(Varient_Values = color).first()
-            else:
-                item = product.product_varients_set.filter(Q(Varient_Values = size)|Q(Varient_Values = color)).first()
-
-    else:
-        if size:
-            item = product.product_varients_set.filter(Varient_Values = size).first()
-        if color:
-            item = product.product_varients_set.filter(Varient_Values = color).first()
-
+            item = product.product_varients_set.filter(Q(Varient_Values = size) | Q(Varient_Values = color)).first()
+    elif size:
+        item = product.product_varients_set.filter(Varient_Values = size).first()
+    elif color:
+        item = product.product_varients_set.filter(Varient_Values = color).first()
+    print(item,'asdfg')
     
     context['product'] = product
     context['item'] = item
