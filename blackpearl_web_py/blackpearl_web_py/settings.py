@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'ckeditor',
+    'ckeditor_uploader',
     'blackpearl_admin',
     'blackpearl_frntend',
 ]
@@ -193,6 +195,17 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+#ckeditor config
+CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"
+CKEDITOR_UPLOAD_PATH = "uploads/"
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'Full',
+        'height': 300,
+        'width': '100%',
+    },
+}
 
 
 # Static files (CSS, JavaScript, Images)

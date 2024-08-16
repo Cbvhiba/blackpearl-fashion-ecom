@@ -5,35 +5,43 @@ from django_lifecycle import LifecycleModelMixin, hook,LifecycleModel,\
 from django.utils.text import slugify
 import os
 from ckeditor.fields import RichTextField
-
+import string
+import random
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 
 class Category(BaseModel):
-    Category_Name = models.CharField(max_length=255)
-    Category_img = models.FileField(upload_to='category') 
-    Parent = models.ForeignKey('Category',on_delete=models.CASCADE,null=True,blank=True)
-    Description = models.TextField(blank=True,null=True)
+    category_name = models.CharField(max_length=255)
+    category_img = models.FileField(upload_to='category') 
+    parent = models.ForeignKey('self',on_delete=models.CASCADE,null=True,blank=True)
+    description = RichTextField()
     slug = models.SlugField(blank=True)
+
     class Meta:
         db_table = "Category"
+
     def __str__(self) -> str:
-        return self.Category_Name
+        return self.category_name
     
     @hook(BEFORE_SAVE)
-    def before_create(self):
-        self.slug = unique_slug_generator(self,self.Category_Name)
+    def before_save(self):
+        if not self.slug:
+            self.slug = unique_slug_generator(self,self.category_name)
 
 class Brand(BaseModel):
-    brand = models.CharField(max_length=100)
+    brand_name = models.CharField(max_length=100)
     icon = models.FileField(upload_to='brand/icon')
     slug = models.SlugField(blank=True)
+
     def __str__(self) -> str:
-        return self.brand
+        return self.brand_name
     
     @hook(BEFORE_CREATE)
     def before_create(self):
-        self.slug = unique_slug_generator(self,self.brand)
+        if not self.slug:
+            self.slug = unique_slug_generator(self,self.brand)
+
 
 class Varient_Type(BaseModel):
     Varient_Name = models.CharField(max_length=255)
@@ -59,26 +67,67 @@ class Tag(BaseModel):
 
     def __str__(self) -> str:
         return self.name
+    
+
+class Offer(BaseModel):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    discount_type = models.CharField(
+        max_length=15,
+        choices=(
+            ('amount', 'Amount'),
+            ('percentage', 'Percentage'),
+            ('b2g1', 'Buy Two Get One Free'),
+        ),
+        default='amount'
+    )
+    discount_value = models.DecimalField(max_digits=12, decimal_places=2)
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        db_table = "offers"
+
+    def __str__(self) -> str:
+        return self.title
+
+    def apply_discount(self, price, quantity):
+        if self.discount_type == 'percentage':
+            return price - (price * self.discount_value / 100)
+        elif self.discount_type == 'amount':
+            return price - self.discount_value
+        elif self.discount_type == 'b2g1':
+            # Calculate price for Buy 2 Get 1 Free offer
+            # For every 3 items, the price of 1 item is free
+            number_of_free_items = quantity // 3
+            items_to_pay_for = quantity - number_of_free_items
+            return price * items_to_pay_for
+        return price
+
 
 class Product(BaseModel):
     Name = models.CharField(max_length=250)
     Varient_Type = models.ManyToManyField(Varient_Type,blank=True)
     Product_Category = models.ForeignKey(Category,on_delete=models.CASCADE,blank=True,null=True)
     Product_Brand = models.ForeignKey(Brand,on_delete=models.CASCADE,blank=True,null=True)
-    Description = models.TextField(blank = True, null = True)
-    Features = models.TextField(blank = True, null = True)
-    Related_Products = models.ManyToManyField('Product',blank=True)
-    tags = models.ForeignKey(Tag, on_delete=models.SET_NULL,null=True, blank=True)
+    Description = RichTextField()
+    Features = RichTextField()
+    Related_Products = models.ManyToManyField('self',blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True,null=True)
     trendy = models.BooleanField(default=False)
+
     class Meta:
         db_table = "Products"
+
     def __str__(self) -> str:
         return self.Name
     
     @hook(BEFORE_CREATE)
     def before_create(self):
-        self.slug = unique_slug_generator(self,self.Name)
+        if not self.slug:
+            self.slug = unique_slug_generator(self,self.Name)
     
 # # pre_save.connect(pre_save_receiver_product, sender = Product)
     
@@ -88,17 +137,16 @@ class Product(BaseModel):
 
 class Product_Varients(BaseModel):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,verbose_name="Product varients")
-    Varient_Values = models.ManyToManyField(Varient_Values,blank=True,related_name='values')
-    Images = models.ImageField(upload_to='Products')
-    discount_Percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
-    Display_Prize = models.DecimalField(max_digits=12,decimal_places=2)
-    Product_stock = models.PositiveIntegerField(blank=True,null=True)
+    varient_values = models.ManyToManyField(Varient_Values,blank=True,related_name='values')
+    images = models.ImageField(upload_to='Products')
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    display_prize = models.DecimalField(max_digits=12,decimal_places=2)
+    product_stock = models.PositiveIntegerField(blank=True,null=True)
     SKU_code = models.CharField(max_length=255)
-    # Product_Offers = models.ManyToManyField(Offers,blank=True)
+    offers = models.ManyToManyField(Offer,blank=True, related_name='product_variants')
     
     slug = models.SlugField(max_length=255, blank=True,null=True)
 
-    
     class Meta:
         db_table = "Product_Varients"
         
@@ -108,17 +156,67 @@ class Product_Varients(BaseModel):
         self.slug = slugify(slug)
         self.save()
     
-    def discount(self):
-        if self.discount_Percent > 0:
-            discounted_price = self.Display_Prize - self.Display_Prize * self.discount_Percent / 100
+    def get_price_with_discount(self):
+        if self.discount_percent > 0:
+            discounted_price = self.display_prize - self.display_prize * self.discount_percent / 100
             return discounted_price
     
-# class Item_Images(models.Model):
-#     Product_Owner = models.ForeignKey(Product_Varients,on_delete=models.CASCADE)
-#     Images = models.FileField(upload_to='Products')
-#     class Meta:
-#         db_table = 'Item_images'
+    def get_price_with_offers(self,quantity):
+        price_with_discount = self.get_price_with_discount()
+        total_price = price_with_discount * quantity
 
-#     def filename(self):
-#         return os.path.basename(self.Images.name)
+        for offer in self.offers.filter(is_active=True):
+            if offer.discount_type == 'b2g1':
+                total_price = offer.apply_discount(price_with_discount, quantity)
+            else:
+                total_price = offer.apply_discount(total_price, quantity)
+
+        return total_price
+
+
+class CouponCode(models.Model):
+    coupon_code = models.CharField(max_length=100, blank=True, unique=True)
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    discount = models.DecimalField(null=True, blank=True, max_digits=12, decimal_places=2)
+    type = models.CharField(
+        max_length=15,
+        choices=(
+            ('amount', 'Amount'),
+            ('percentage', 'Percentage'),
+        ),
+        default='amount'
+    )
+    user_count = models.PositiveIntegerField(null=True, blank=True)
+    min_amount = models.DecimalField(null=True, blank=True, max_digits=12, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        if not self.coupon_code:
+            self.coupon_code = self.generate_unique_coupon_code()
+        super().save(*args, **kwargs)
+
+    def generate_unique_coupon_code(self):
+        letters = string.ascii_letters
+        numbers = '0123456789'
+        characters = letters + numbers
+        while True:
+            code = ''.join(random.choice(characters) for _ in range(12))
+            if not CouponCode.objects.filter(coupon_code=code).exists():
+                return code
+
+    def clean(self):
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValidationError('End date must be after start date.')
+
+    def apply_coupon(self, price):
+        if self.type == 'percentage':
+            return price - (price * self.discount / 100)
+        elif self.type == 'amount':
+            return price - self.discount
+        return price
+    
+    def __str__(self):
+        return self.coupon_code
+
     

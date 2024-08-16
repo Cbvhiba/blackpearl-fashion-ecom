@@ -160,7 +160,7 @@ a {
 
 a:hover {
   color: #ba6a62;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 a:not([href]):not([class]) {
@@ -9594,4 +9594,7 @@ a.text-dark:hover, a.text-dark:focus {
   text-align: center;
   background-color: #fff;
   margin-right: 10px;
+}
+.size-active{
+  color: #4ea685
 }

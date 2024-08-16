@@ -5,6 +5,8 @@
     --white: #ffffff;
     --gray: #efefef;
     --gray-2: #757575;
+    ---red:#D32F2F;
+    ---light-red:#F8D7DA;
 
     --facebook-color: #4267B2;
     --google-color: #DB4437;
@@ -342,4 +344,24 @@ body {
         margin: .5rem;
         font-size: 2rem;
     }
+}
+
+/* Validation Error Styling */
+.form-errors {
+    color: var(--red); 
+    font-size: 0.9rem;
+    margin: 1rem 0;
+    padding: 0.5rem;
+    border: 1px solid var(--red);
+    border-radius: 0.5rem;
+    background-color: var(--light-red); 
+}
+
+.form-errors ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.form-errors li {
+    margin-bottom: 0.5rem;
 }
