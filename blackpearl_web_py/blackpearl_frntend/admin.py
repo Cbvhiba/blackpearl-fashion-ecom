@@ -19,3 +19,19 @@ class CustomerUserAdmin(admin.ModelAdmin):
         if obj:
             return self.readonly_fields + ('password',)
         return self.readonly_fields
+    
+@admin.register(CustomerLog)
+class CustomerLogAdmin(admin.ModelAdmin):
+    list_display = ('user', 'activity', 'date')
+    list_filter = ('activity',)
+    search_fields = ('user', 'activity')
+    ordering = ('-date',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

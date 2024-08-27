@@ -196,6 +196,25 @@ USE_L10N = True
 
 USE_TZ = True
 
+# authuser
+# AUTH_USER_MODEL = 'blackpearl_frntend.CustomerUser'
+
+# AUTHENTICATION_BACKENDS = [
+#     'blackpearl_frntend.custom_authentication.EmailBackend',  # Ensure correct path
+#     'django.contrib.auth.backends.ModelBackend',  # Default backend
+# ]
+
+
+from django.contrib.messages import constants as messages
+
+MESSAGE_TAGS = {
+    messages.DEBUG: 'alert-info',
+    messages.INFO: 'alert-info',
+    messages.SUCCESS: 'alert-success',
+    messages.WARNING: 'alert-warning',
+    messages.ERROR: 'alert-danger',
+}
+
 #ckeditor config
 CKEDITOR_BASEPATH = "/static/ckeditor/ckeditor/"
 CKEDITOR_UPLOAD_PATH = "uploads/"
@@ -221,3 +240,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
+CSRF_COOKIE_HTTPONLY = False
+

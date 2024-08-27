@@ -5,6 +5,8 @@
 
 {% block extra_style %}<link href="{% static 'css/account.css' %}" rel="stylesheet">{% endblock extra_style %}
 
+{% include "messages.html" %}
+
 {% block content %}
     <!-- Account Page -->
     <div id="container1" class="container1">
@@ -13,16 +15,24 @@
 			<!-- SIGN IN -->
 			<div class="col1 align-items-center1 flex-col sign-up">
 				<div class="form-wrapper align-items-center1">
-                    <form method = "post" action="{% url "signin" %}">
+                    <form method = "post" action="{% url "signin" %}" id="signin-form">
 						{% csrf_token %}
                         <div class="form sign-up">
+                            <div class="form-errors" id="form-errors"></div>
+                            {% if form.non_field_errors %}
+                            <div class="form-errors">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                             <div class="input-group1">
                                 <i class='bx bxs-user'></i>
-                                <input type="text" placeholder="Username">
+                                {{ form.email }}
                             </div>
                             <div class="input-group1">
                                 <i class='bx bxs-lock-alt'></i>
-                                <input type="password" placeholder="Password">
+                                {{ form.password }}
                             </div>
                             <button>Sign in</button>
                             <p>
@@ -73,5 +83,47 @@
             container.classList.add('sign-up');
         });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('signin-form');
+            const formErrors = document.querySelector('.form-errors');
+    
+            form.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+    
+                const formData = new FormData(form);
+    
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',  // Ensure this header is set
+                        'X-CSRFToken': form.querySelector('input[name="csrfmiddlewaretoken"]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.errors) {
+                        // Display form errors
+                        formErrors.innerHTML = '';
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            errors.forEach(error => {
+                                formErrors.innerHTML += `<p>${error}</p>`;
+                            });
+                        }
+                    } else if (data.message) {
+                        // Display success message and redirect
+                        alert(data.message);
+                        window.location.href = data.redirectUrl;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    formErrors.innerHTML = '<p>Something went wrong. Please try again.</p>';
+                });
+            });
+        });
+    </script>
+    
 {% endblock extra_js %}
 {% endblock content %}

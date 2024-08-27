@@ -8,6 +8,9 @@ from ckeditor.fields import RichTextField
 import string
 import random
 from django.core.exceptions import ValidationError
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 # Create your models here.
 
@@ -16,7 +19,7 @@ class Category(BaseModel):
     category_img = models.FileField(upload_to='category') 
     parent = models.ForeignKey('self',on_delete=models.CASCADE,null=True,blank=True)
     description = RichTextField()
-    slug = models.SlugField(blank=True)
+    slug = models.SlugField(blank=True, unique=True)
 
     class Meta:
         db_table = "Category"
@@ -32,7 +35,7 @@ class Category(BaseModel):
 class Brand(BaseModel):
     brand_name = models.CharField(max_length=100)
     icon = models.FileField(upload_to='brand/icon')
-    slug = models.SlugField(blank=True)
+    slug = models.SlugField(blank=True, unique=True)
 
     def __str__(self) -> str:
         return self.brand_name
@@ -45,8 +48,10 @@ class Brand(BaseModel):
 
 class Varient_Type(BaseModel):
     Varient_Name = models.CharField(max_length=255)
+
     class Meta:
         db_table = "Varient_Type"
+
     def __str__(self) -> str:
         return self.Varient_Name
 
@@ -54,8 +59,10 @@ class Varient_Values(BaseModel):
     Varient_Values = models.CharField(max_length=255)
     Varient_Type = models.ForeignKey(Varient_Type,on_delete=models.CASCADE)
     Varient_Image = models.FileField(upload_to='values',blank = True,null=True)
+    
     class Meta:
         db_table = "Varient_Values"
+
     def __str__(self) -> str:
         return self.Varient_Values
     
@@ -67,7 +74,39 @@ class Tag(BaseModel):
 
     def __str__(self) -> str:
         return self.name
-    
+
+
+class Banner(BaseModel):
+    banner_name = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    banner_url = models.CharField(max_length=255)
+    # banner_display_order = models.IntegerField()
+    images = models.FileField(upload_to='banners', blank=True, null=True)
+    app_banner_image = models.FileField(upload_to='banners_app', blank=True, null=True)
+    # is_intermediate = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'banner'
+        verbose_name = 'Banner'
+        verbose_name_plural = 'Banners'
+
+    def save(self, *args, **kwargs):
+        if self.images:
+            image = Image.open(self.images)
+            image = image.convert('RGB')
+
+            # Resize image
+            image = image.resize((1366, 800), Image.ANTIALIAS)
+
+            # Save resized image
+            temp_thumb = BytesIO()
+            image.save(temp_thumb, format='JPEG')
+            temp_thumb.seek(0)
+
+            self.images.save(self.images.name, ContentFile(temp_thumb.read()), save=False)
+
+        super().save(*args, **kwargs)
+
 
 class Offer(BaseModel):
     title = models.CharField(max_length=255)
@@ -143,8 +182,7 @@ class Product_Varients(BaseModel):
     display_prize = models.DecimalField(max_digits=12,decimal_places=2)
     product_stock = models.PositiveIntegerField(blank=True,null=True)
     SKU_code = models.CharField(max_length=255)
-    offers = models.ManyToManyField(Offer,blank=True, related_name='product_variants')
-    
+    offers = models.ManyToManyField(Offer,blank=True)
     slug = models.SlugField(max_length=255, blank=True,null=True)
 
     class Meta:
@@ -160,6 +198,7 @@ class Product_Varients(BaseModel):
         if self.discount_percent > 0:
             discounted_price = self.display_prize - self.display_prize * self.discount_percent / 100
             return discounted_price
+        return self.display_price
     
     def get_price_with_offers(self,quantity):
         price_with_discount = self.get_price_with_discount()
@@ -218,5 +257,10 @@ class CouponCode(models.Model):
     
     def __str__(self):
         return self.coupon_code
+    
+class Log(models.Model):
+    user = models.CharField(max_length=100)
+    activity = models.TextField()
+    date = models.DateTimeField(auto_now_add=True,null=True)
 
     

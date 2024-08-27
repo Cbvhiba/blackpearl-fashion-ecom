@@ -2,6 +2,8 @@ from django.db import models
 from django_lifecycle import LifecycleModelMixin, hook, BEFORE_CREATE
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 
 def username_from_email(email):
     """Generate a username from the email address."""
@@ -26,8 +28,9 @@ class CustomerUser(LifecycleModelMixin, models.Model):
         )
     )
     email = models.EmailField(max_length=255, blank=True, null=True, unique=True)
-    password = models.CharField(max_length=128, blank=True, null=True)  # Extended length for hashed passwords
+    password = models.CharField(max_length=128, blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    last_login = models.DateTimeField(null=True, blank=True) 
     profile_picture = models.ImageField(upload_to='customer_profiles/', blank=True, null=True)
     registered_date = models.DateTimeField(auto_now_add=True)
     total_orders = models.IntegerField(default=0)
@@ -41,6 +44,20 @@ class CustomerUser(LifecycleModelMixin, models.Model):
 
     def __str__(self):
         return self.username or self.email
+    
+    def set_password(self, raw_password):
+        """Hash the password before saving it."""
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        """Check if the given password matches the hashed password."""
+        return check_password(raw_password, self.password)
+    
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.last_login:
+            # Set last_login if it hasn't been set before (if the user already exists)
+            self.last_login = timezone.now()
+        super().save(*args, **kwargs)
 
     @hook(BEFORE_CREATE)
     def set_username(self):
@@ -55,4 +72,10 @@ class CustomerUser(LifecycleModelMixin, models.Model):
             raise ValidationError(f"Email '{self.email}' is already in use.")
         if self.phone and CustomerUser.objects.exclude(pk=self.pk).filter(phone=self.phone).exists():
             raise ValidationError(f"Phone number '{self.phone}' is already in use.")
+
+
+class CustomerLog(models.Model):
+    user = models.CharField(max_length=100)
+    activity = models.TextField()
+    date = models.DateTimeField(auto_now_add=True)
 

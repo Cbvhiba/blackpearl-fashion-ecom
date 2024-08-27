@@ -12,38 +12,43 @@
 			<!-- SIGN UP -->
 			<div class="col1 align-items-center1 flex-col sign-up">
 				<div class="form-wrapper align-items-center1">
-					<form method="post" action="{% url 'signup' %}">
+					<form method="post" action="{% url 'signup' %}" id="signup-form">
 						{% csrf_token %}
 						<div class="form sign-up">
+                            <div class="form-errors" id="form-errors">
+                                <!-- Errors will be displayed here -->
+                            </div>
                             {% if form.non_field_errors %}
-                                <div class="form-errors">
-                                    {{ form.non_field_errors }}
-                                </div>
+                            <div class="form-errors">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
                             {% endif %}
 							<div class="input-group1">
 								<i class='bx bxs-user'></i>
 								{{ form.username }}
+                                {{ form.username.errors }}
 							</div>
 							<div class="input-group1">
 								<i class='bx bx-mail-send'></i>
 								{{ form.email }}
+                                {{ form.email.errors }}
 							</div>
 							<div class="input-group1">
 								<i class='bx bxs-lock-alt'></i>
 								{{ form.password1 }}
+                                {{ form.password1.errors }}
 							</div>
 							<div class="input-group1">
 								<i class='bx bxs-lock-alt'></i>
 								{{ form.password2 }}
+                                {{ form.password2.errors }}
 							</div>
-							<button>
-								Sign up
-							</button>
+							<button type="submit">Sign up</button>
 							
                             <p>
-								<span>
-									Already have an account?
-								</span>
+								<span>Already have an account?</span>
 								<a href="{% url "signin" %}" class="pointer">
 									Sign in here
                                 </a>
@@ -88,17 +93,54 @@
 		<!-- END CONTENT SECTION -->
 	</div>
 {% block extra_js %}
-    <script>
-        let container = document.getElementById('container1')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let container = document.querySelector('.container1');
+        container.classList.add('sign-up');
+    });
+</script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('signup-form');
+    const formErrors = document.getElementById('form-errors');
 
-        {% comment %} toggle = () => {
-            container.classList.toggle('sign-in')
-            container.classList.toggle('sign-up')
-        } {% endcomment %}
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
 
-        setTimeout(() => {
-            container.classList.add('sign-up')
-        }, 200)
-    </script>
+        const formData = new FormData(form); // Create a FormData object from the form
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': form.querySelector('input[name="csrfmiddlewaretoken"]').value
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.errors) {
+                // Show errors
+                formErrors.innerHTML = '';
+                for (const [field, errors] of Object.entries(data.errors)) {
+                    errors.forEach(error => {
+                        formErrors.innerHTML += `<p>${error}</p>`;
+                    });
+                }
+            } else if (data.redirectUrl) {
+                // Redirect on success
+                window.location.href = data.redirectUrl;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            formErrors.innerHTML = '<p>Something went wrong. Please try again.</p>';
+        });
+    });
+});
 {% endblock extra_js %}
 {% endblock content %}
