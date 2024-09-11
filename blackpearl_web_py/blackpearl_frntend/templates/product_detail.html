@@ -3,12 +3,16 @@
 {% load custom_tag %}
 {% block title %}Product Detail{% endblock title %}
 
+{% include "messages.html" %}
+
 {% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+
     <!-- Page Header Start -->
     <div class="container-fluid mb-3">
         <div class="d-flex flex-column">
             <div class="d-inline-flex">
-                <p class="m-0"><a href="{% url 'home' %}">Home</a></p>
+                <p class="m-0"><a href="{% url 'Userindex' %}">Home</a></p>
                 <p class="m-0 px-2">/</p>
                 <p class="m-0">Product Detail</p>
             </div>
@@ -69,7 +73,7 @@
                     <i class="fas fa-rupee-sign mr-1" style="line-height:2;color:#1C1C1C;" aria-hidden="true"></i>
                     <h3 class="font-weight-semi-bold mb-4">{{item.get_price_with_discount | floatformat:2}}</h3>
                 </div>
-                <p class="mb-4">{{item.Description}}</p>
+                
                 {% if 'size' in product.Varient_Type.all|to_name_list %}
                 <div class="d-flex mb-3">
                     <p class="text-dark font-weight-medium mb-0 mr-3">Sizes:</p>
@@ -81,14 +85,14 @@
                         {% if 'color' in product.Varient_Type.all|to_name_list %}
                         <div class="custom-control custom-radio custom-control-inline" style="margin:0;padding:0">
                         <a href="/product_detail/?p_id={% if product.slug %}{{product.slug}}{% else %}{{product.uid}}{% endif %}&size={{size.uid}}&color={{selectedColor}}&s"
-                            class="size-brdr {% if size.id in selectedColorHasSize %}{% else %}disable{% endif %} {% if size.id in ProductItem.Varient_Values.all|to_id_list %}size-active{% endif %}">
+                            class="size-brdr {% if size.id in selectedColorHasSize %}{% else %}disable{% endif %} {% if size.id in item.Varient_Values.all|to_id_list %}size-active{% endif %}">
                             {{size}}
                         </a>
                     </div>
                         {% else %}
                         <div class="custom-control custom-radio custom-control-inline" style="margin:0;padding:0">
                         <a href="/product_detail/?p_id={% if product.slug %}{{product.slug}}{% else %}{{product.uid}}{% endif %}&size={{size.uid}}&color={{selectedColor}}&s"
-                        class="size-brdr {% if size.uid in ProductItem.Varient_Values.all|to_id_list %}size-active{% endif %}">
+                        class="size-brdr {% if size.uid in item.Varient_Values.all|to_id_list %}size-active{% endif %}">
                         {{size}}
                         </a>
                     </div>
@@ -109,14 +113,14 @@
                         {% if 'size' in product.Varient_Type.all|to_name_list %}
                         <div class="custom-control custom-radio custom-control-inline" style="margin:0;padding:0">
                             <a href="/product_detail/?p_id={% if product.slug %}{{product.slug}}{% else %}{{product.uid}}{% endif %}&size={{selectedSize}}&color={{color.uid}}&c" title="{{color}}"
-                            class="size-brdr {% if color.uid in ProductItem.Varient_Values.all|to_id_list %}size-active{% endif %}">
+                            class="size-brdr {% if color.uid in item.Varient_Values.all|to_id_list %}size-active{% endif %}">
                                 {{color}}
                             </a>
                         </div>
                         {% else %}
                         <div class="custom-control custom-radio custom-control-inline" style="margin:0;padding:0">
                             <a href="/product_detail/?p_id={% if product.slug %}{{product.slug}}{% else %}{{product.uid}}{% endif %}&size={{selectedSize}}&color={{color.uid}}&c"
-                            class="size-brdr {% if color.uid in ProductItem.Varient_Values.all|to_id_list %}size-active{% endif %}">
+                            class="size-brdr {% if color.uid in item.Varient_Values.all|to_id_list %}size-active{% endif %}">
                                 {{color}}
                             </a>
                         </div>
@@ -125,28 +129,7 @@
                         {% endfor %}
                     </div>
                     {% endwith %}
-                    {% comment %} <form>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-1" name="color">
-                            <label class="custom-control-label" for="color-1">Black</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-2" name="color">
-                            <label class="custom-control-label" for="color-2">White</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-3" name="color">
-                            <label class="custom-control-label" for="color-3">Red</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-4" name="color">
-                            <label class="custom-control-label" for="color-4">Blue</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-5" name="color">
-                            <label class="custom-control-label" for="color-5">Green</label>
-                        </div>
-                    </form> {% endcomment %}
+                
                 </div>
                 {% endif %}
                 <div class="d-flex align-items-center mb-4 pt-2">
@@ -163,7 +146,22 @@
                             </button>
                         </div>
                     </div>
-                    <button class="btn btn-primary px-3"><i class="fa fa-shopping-cart mr-1"></i> Add To Cart</button>
+                    {% if customer %}
+                    {% if item.uid in listofcart %}
+                    <a href="{% url 'cart' %}" class="btn btn-primary px-3">
+                        <div class="over-text"><i class="fa fa-shopping-cart mr-1"></i>
+                            Go To Cart
+                        </div>
+                    </a>
+                    {% else %}
+                    <a href="#" class="btn btn-primary px-3 cart-add" data-product={{item.uid}}>
+                        <div class="over-text"><i class="fa fa-shopping-cart mr-1"></i>
+                            Add To Cart
+                        </div>
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                    {% comment %} <button class="btn btn-primary px-3"><i class="fa fa-shopping-cart mr-1"></i> Add To Cart</button> {% endcomment %}
                 </div>
                 <div class="d-flex pt-2">
                     <p class="text-dark font-weight-medium mb-0 mr-2">Share on:</p>
@@ -182,6 +180,14 @@
                         </a>
                     </div>
                 </div>
+                <div>
+                    <p class="text-dark font-weight-medium mt-2 mb-0 mr-2">Product Details</p>
+                    <p>{{product.product_details | safe}}</p>
+                </div>
+                <div>
+                    <p class="text-dark font-weight-medium mt-2 mb-0 mr-2">About this item</p>
+                    <p>{{product.about_his_item | safe}}</p>
+                </div>
             </div>
         </div>
         <div class="row px-xl-5">
@@ -194,46 +200,11 @@
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="tab-pane-1">
                         <h4 class="mb-3">Product Description</h4>
-                        <p>Eos no lorem eirmod diam diam, eos elitr et gubergren diam sea. Consetetur vero aliquyam invidunt duo dolores et duo sit. Vero diam ea vero et dolore rebum, dolor rebum eirmod consetetur invidunt sed sed et, lorem duo et eos elitr, sadipscing kasd ipsum rebum diam. Dolore diam stet rebum sed tempor kasd eirmod. Takimata kasd ipsum accusam sadipscing, eos dolores sit no ut diam consetetur duo justo est, sit sanctus diam tempor aliquyam eirmod nonumy rebum dolor accusam, ipsum kasd eos consetetur at sit rebum, diam kasd invidunt tempor lorem, ipsum lorem elitr sanctus eirmod takimata dolor ea invidunt.</p>
-                        <p>Dolore magna est eirmod sanctus dolor, amet diam et eirmod et ipsum. Amet dolore tempor consetetur sed lorem dolor sit lorem tempor. Gubergren amet amet labore sadipscing clita clita diam clita. Sea amet et sed ipsum lorem elitr et, amet et labore voluptua sit rebum. Ea erat sed et diam takimata sed justo. Magna takimata justo et amet magna et.</p>
+                        <p>{{product.Description | safe}}</p>
                     </div>
                     <div class="tab-pane fade" id="tab-pane-2">
                         <h4 class="mb-3">Additional Information</h4>
-                        <p>Eos no lorem eirmod diam diam, eos elitr et gubergren diam sea. Consetetur vero aliquyam invidunt duo dolores et duo sit. Vero diam ea vero et dolore rebum, dolor rebum eirmod consetetur invidunt sed sed et, lorem duo et eos elitr, sadipscing kasd ipsum rebum diam. Dolore diam stet rebum sed tempor kasd eirmod. Takimata kasd ipsum accusam sadipscing, eos dolores sit no ut diam consetetur duo justo est, sit sanctus diam tempor aliquyam eirmod nonumy rebum dolor accusam, ipsum kasd eos consetetur at sit rebum, diam kasd invidunt tempor lorem, ipsum lorem elitr sanctus eirmod takimata dolor ea invidunt.</p>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item px-0">
-                                        Sit erat duo lorem duo ea consetetur, et eirmod takimata.
-                                    </li>
-                                    <li class="list-group-item px-0">
-                                        Amet kasd gubergren sit sanctus et lorem eos sadipscing at.
-                                    </li>
-                                    <li class="list-group-item px-0">
-                                        Duo amet accusam eirmod nonumy stet et et stet eirmod.
-                                    </li>
-                                    <li class="list-group-item px-0">
-                                        Takimata ea clita labore amet ipsum erat justo voluptua. Nonumy.
-                                    </li>
-                                  </ul> 
-                            </div>
-                            <div class="col-md-6">
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item px-0">
-                                        Sit erat duo lorem duo ea consetetur, et eirmod takimata.
-                                    </li>
-                                    <li class="list-group-item px-0">
-                                        Amet kasd gubergren sit sanctus et lorem eos sadipscing at.
-                                    </li>
-                                    <li class="list-group-item px-0">
-                                        Duo amet accusam eirmod nonumy stet et et stet eirmod.
-                                    </li>
-                                    <li class="list-group-item px-0">
-                                        Takimata ea clita labore amet ipsum erat justo voluptua. Nonumy.
-                                    </li>
-                                  </ul> 
-                            </div>
-                        </div>
+                        <p>{{item.product_information | safe}}</p>
                     </div>
                     <div class="tab-pane fade" id="tab-pane-3">
                         <div class="row">
@@ -384,9 +355,5 @@
     <!-- Products End -->
 {% endblock content %}
 {% block extra_js %}
-
-<script>
-    
-</script>
-
+<script src="{% static 'js/product.js' %}"></script>
 {% endblock extra_js %}

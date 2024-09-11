@@ -1,11 +1,16 @@
 {% extends "header_footer.html" %}
 {% load static %}
 {% block title %}Black Pearl{% endblock title %}
+
 {% block banner %}
     {% include "banner.html" %}
 {% endblock banner %}
 
+{% include "messages.html" %}
+
 {% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+
     <!-- Featured Start -->
     <div class="container-fluid pt-5">
         <div class="row px-xl-5 pb-3">
@@ -111,7 +116,11 @@
                     </div>
                     <div class="card-footer d-flex justify-content-between bg-light border">
                         <a href="/product_detail/?p_id={% if product.slug %}{{product.slug}}{% else %}{{product.uid}}{% endif %}&item={{productitem.uid}}" class="btn btn-sm text-dark p-0"><i class="fas fa-eye text-primary mr-1"></i>View Detail</a>
-                        <a href="" class="btn btn-sm text-dark p-0"><i class="fas fa-shopping-cart text-primary mr-1"></i>Add To Cart</a>
+                        {% if productitem.uid in listofcart %}
+                        <a href="{% url 'cart' %}" class="btn btn-sm text-dark p-0 "><i class="fas fa-shopping-cart text-primary mr-1"></i>Go To Cart</a>
+                        {% else %}
+                        <a href="" class="btn btn-sm text-dark p-0 cart-add" data-product="{{productitem.uid}}"><i class="fas fa-shopping-cart text-primary mr-1"></i>Add To Cart</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -327,3 +336,6 @@
     </div>
     <!-- Vendor End -->
 {% endblock content %}
+{% block extra_js %}
+<script src="{% static 'js/product.js' %}"></script>
+{% endblock extra_js %}

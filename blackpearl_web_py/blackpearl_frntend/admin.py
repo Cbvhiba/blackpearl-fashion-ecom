@@ -3,7 +3,7 @@ from blackpearl_frntend.models import *
 
 # Register your models here.
 
-@admin.register(CustomerUser)
+
 class CustomerUserAdmin(admin.ModelAdmin):
     list_display = ('username', 'email', 'phone', 'first_name', 'last_name', 'is_active', 'registered_date')
     search_fields = ('username', 'email', 'phone', 'first_name', 'last_name')
@@ -20,7 +20,7 @@ class CustomerUserAdmin(admin.ModelAdmin):
             return self.readonly_fields + ('password',)
         return self.readonly_fields
     
-@admin.register(CustomerLog)
+
 class CustomerLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'activity', 'date')
     list_filter = ('activity',)
@@ -35,3 +35,18 @@ class CustomerLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+    
+
+class CartAdmin(admin.ModelAdmin):
+    list_display = ('user', 'product', 'quantity', 'pro_price_with_dis')
+    list_filter = ('user',)
+    search_fields = ('user__username', 'product__id')
+
+    def product(self, obj):
+        return obj.product
+
+    ordering = ('-added_date',) 
+
+admin.site.register(CustomerUser, CustomerUserAdmin)
+admin.site.register(CustomerLog, CustomerLogAdmin)
+admin.site.register(Cart, CartAdmin)

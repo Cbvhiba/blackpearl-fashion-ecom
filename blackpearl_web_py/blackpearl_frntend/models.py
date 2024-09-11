@@ -3,6 +3,7 @@ from django_lifecycle import LifecycleModelMixin, hook, BEFORE_CREATE
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from blackpearl_admin.models import *
 from django.contrib.auth.hashers import make_password, check_password
 
 def username_from_email(email):
@@ -72,6 +73,47 @@ class CustomerUser(LifecycleModelMixin, models.Model):
             raise ValidationError(f"Email '{self.email}' is already in use.")
         if self.phone and CustomerUser.objects.exclude(pk=self.pk).filter(phone=self.phone).exists():
             raise ValidationError(f"Phone number '{self.phone}' is already in use.")
+
+
+class Cart(models.Model):
+    user = models.ForeignKey(CustomerUser, on_delete=models.CASCADE)
+    product = models.ForeignKey('blackpearl_admin.Product_Varients', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)  # Default to 1 if not specified
+    display_price = models.DecimalField(max_digits=12, decimal_places=2)
+    discount = models.DecimalField(max_digits=12, decimal_places=2)
+    pro_price_with_dis = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    added_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'cart'
+        unique_together = ['user', 'product']
+        verbose_name = 'Cart'
+        verbose_name_plural = 'Carts'
+
+    def __str__(self):
+        return f"{self.user.username}'s cart - {self.product}"
+
+    def get_total_price(self):
+        """Calculate total price considering the offer price."""
+        return self.pro_price_with_dis if self.pro_price_with_dis else self.display_price
+
+
+class TotalCart(models.Model):
+    user = models.ForeignKey(CustomerUser, on_delete=models.CASCADE)
+    total_display_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_pro_price_with_dis = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    total_quantity = models.PositiveIntegerField(default=0)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'total_cart'
+        verbose_name = 'Total Cart'
+        verbose_name_plural = 'Total Carts'
+
+    def __str__(self):
+        return f"Total Cart for {self.user.username}"
 
 
 class CustomerLog(models.Model):

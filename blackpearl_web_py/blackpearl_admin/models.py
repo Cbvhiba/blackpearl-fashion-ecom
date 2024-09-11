@@ -8,42 +8,41 @@ from ckeditor.fields import RichTextField
 import string
 import random
 from django.core.exceptions import ValidationError
-from PIL import Image
-from io import BytesIO
-from django.core.files.base import ContentFile
+from django.db.models import Avg
+from blackpearl_frntend.models import CustomerUser
 
 # Create your models here.
 
 class Category(BaseModel):
-    category_name = models.CharField(max_length=255)
-    category_img = models.FileField(upload_to='category') 
+    name = models.CharField(max_length=255)
+    images = models.FileField(upload_to='category') 
     parent = models.ForeignKey('self',on_delete=models.CASCADE,null=True,blank=True)
-    description = RichTextField()
+    description = models.TextField(blank=True, null=True)
     slug = models.SlugField(blank=True, unique=True)
 
     class Meta:
         db_table = "Category"
 
     def __str__(self) -> str:
-        return self.category_name
+        return self.name
     
     @hook(BEFORE_SAVE)
     def before_save(self):
         if not self.slug:
-            self.slug = unique_slug_generator(self,self.category_name)
+            self.slug = unique_slug_generator(self,self.name)
 
 class Brand(BaseModel):
-    brand_name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
     icon = models.FileField(upload_to='brand/icon')
     slug = models.SlugField(blank=True, unique=True)
 
     def __str__(self) -> str:
-        return self.brand_name
+        return self.name
     
     @hook(BEFORE_CREATE)
     def before_create(self):
         if not self.slug:
-            self.slug = unique_slug_generator(self,self.brand)
+            self.slug = unique_slug_generator(self,self.name)
 
 
 class Varient_Type(BaseModel):
@@ -90,23 +89,6 @@ class Banner(BaseModel):
         verbose_name = 'Banner'
         verbose_name_plural = 'Banners'
 
-    def save(self, *args, **kwargs):
-        if self.images:
-            image = Image.open(self.images)
-            image = image.convert('RGB')
-
-            # Resize image
-            image = image.resize((1366, 800), Image.ANTIALIAS)
-
-            # Save resized image
-            temp_thumb = BytesIO()
-            image.save(temp_thumb, format='JPEG')
-            temp_thumb.seek(0)
-
-            self.images.save(self.images.name, ContentFile(temp_thumb.read()), save=False)
-
-        super().save(*args, **kwargs)
-
 
 class Offer(BaseModel):
     title = models.CharField(max_length=255)
@@ -151,23 +133,29 @@ class Product(BaseModel):
     Product_Category = models.ForeignKey(Category,on_delete=models.CASCADE,blank=True,null=True)
     Product_Brand = models.ForeignKey(Brand,on_delete=models.CASCADE,blank=True,null=True)
     Description = RichTextField()
-    Features = RichTextField()
+    product_details = RichTextField(blank=True,null=True)
+    about_his_item = RichTextField()
     Related_Products = models.ManyToManyField('self',blank=True)
     tags = models.ManyToManyField(Tag, blank=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True,null=True)
     trendy = models.BooleanField(default=False)
+    average_rating = models.FloatField(default=0.0)
 
     class Meta:
         db_table = "Products"
 
+    def update_rating(self):
+        # Update the average rating based on related reviews
+        self.average_rating = self.reviews.aggregate(Avg('rating'))['rating__avg'] or 0.0
+        self.save()
+
     def __str__(self) -> str:
         return self.Name
     
-    @hook(BEFORE_CREATE)
-    def before_create(self):
+    def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = unique_slug_generator(self,self.Name)
-    
+            self.slug = unique_slug_generator(self, self.Name)
+        super().save(*args, **kwargs)
 # # pre_save.connect(pre_save_receiver_product, sender = Product)
     
 # """
@@ -176,6 +164,7 @@ class Product(BaseModel):
 
 class Product_Varients(BaseModel):
     product = models.ForeignKey(Product,on_delete=models.CASCADE,verbose_name="Product varients")
+    product_information = RichTextField(blank=True,null=True)
     varient_values = models.ManyToManyField(Varient_Values,blank=True,related_name='values')
     images = models.ImageField(upload_to='Products')
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -188,17 +177,17 @@ class Product_Varients(BaseModel):
     class Meta:
         db_table = "Product_Varients"
         
-    @hook(AFTER_CREATE)
-    def set_slug(self):
-        slug = f'{self.product.Name} ' + '-'.join([i.Varient_Values for i in self.Varient_Values.all()]) + f'_{self.uid}'
-        self.slug = slugify(slug)
-        self.save()
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            slug = f'{self.product.Name} ' + '-'.join([i.value for i in self.varient_values.all()]) + f'_{self.pk}'
+            self.slug = slugify(slug)
+        super().save(*args, **kwargs)
     
     def get_price_with_discount(self):
         if self.discount_percent > 0:
-            discounted_price = self.display_prize - self.display_prize * self.discount_percent / 100
+            discounted_price = self.display_prize * (1 - self.discount_percent / 100)
             return discounted_price
-        return self.display_price
+        return self.display_prize
     
     def get_price_with_offers(self,quantity):
         price_with_discount = self.get_price_with_discount()
@@ -257,7 +246,22 @@ class CouponCode(models.Model):
     
     def __str__(self):
         return self.coupon_code
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, related_name='reviews', on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomerUser, on_delete=models.CASCADE)  
+    rating = models.PositiveIntegerField()  # Rating out of 5 or 10
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Review by {self.user.username} on {self.product.Name}'
     
+
 class Log(models.Model):
     user = models.CharField(max_length=100)
     activity = models.TextField()

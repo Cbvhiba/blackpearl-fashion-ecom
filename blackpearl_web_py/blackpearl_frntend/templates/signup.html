@@ -2,8 +2,9 @@
 {% load static %}
 {% block title %}SignUp{% endblock title %}
 
-
 {% block extra_style %}<link href="{% static 'css/account.css' %}" rel="stylesheet">{% endblock extra_style %}
+
+{% include "messages.html" %}
 
 {% block content %}
     <!-- Account Page -->
